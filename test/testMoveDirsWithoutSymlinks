@@ -1,0 +1,131 @@
+#!/bin/bash
+
+# reload with fresh data
+
+function usage () {
+  echo "
+
+  Purpose:
+
+      Test moveDirsWithoutSymlinks
+  "
+
+}
+
+function refreshTestDataFolder () {
+
+  # Replacing testData folder with a new one.
+  rm -rf ./testData                           # remove old testData
+  cp -r ./templateData ./testData             # create new test data
+}
+
+function showIndented () {
+  str=$1
+  [ $2 ] && indent=$2 || indent=0
+  for ((i=0; i<$indent; i++))
+  do
+    str="\t$str"
+  done
+
+  echo -e $str
+}
+
+
+function executeTests () {
+
+  MoveDirsWithoutSymlinks="../moveDirsWithoutSymlinks"
+
+  dirName=$(cd $(dirname "$0"); pwd)
+  testData="$dirName/testData"
+  sourceDirs="$testData/sourceDirs"
+  targetDirs="$testData/targetDirs"
+
+
+
+
+  showIndented "MoveDirsWithoutSymlinks test script"
+
+
+    showIndented "MoveDirsWithoutSymlinks command" 1
+
+
+      showIndented "should move the two dirs that are not in the symlink file" 2
+
+        refreshTestDataFolder
+
+        $MoveDirsWithoutSymlinks $sourceDirs/dir1 $targetDirs/dir1 > /dev/null
+        $MoveDirsWithoutSymlinks $sourceDirs/dir2 $targetDirs/dir2 > /dev/null
+        $MoveDirsWithoutSymlinks $sourceDirs/dir3 $targetDirs/dir3 > /dev/null
+
+        dir1=$( [[ -d $targetDirs/dir1/bar && -d $targetDirs/dir1/baz ]] && echo 'pass' || echo 'fail' )
+        dir2=$( [[ -d $targetDirs/dir2/foo && -d $targetDirs/dir2/baz ]] && echo 'pass' || echo 'fail' )
+        dir3=$( [[ -d $targetDirs/dir3/foo && -d $targetDirs/dir3/bar ]] && echo 'pass' || echo 'fail' )
+
+        result="$dir1$dir2$dir3"
+        [ $result == "passpasspass" ] && showIndented "pass" 3 || showIndented "fail" 3
+
+
+
+
+      showIndented "should not move the one dir that is in the symlink file" 2
+
+        refreshTestDataFolder
+
+        $MoveDirsWithoutSymlinks $sourceDirs/dir1 $targetDirs/dir1 > /dev/null
+        $MoveDirsWithoutSymlinks $sourceDirs/dir2 $targetDirs/dir2 > /dev/null
+        $MoveDirsWithoutSymlinks $sourceDirs/dir3 $targetDirs/dir3 > /dev/null
+
+        dir1=$( [[ ! -d $targetDirs/dir1/foo  ]] && echo 'pass' || echo 'fail' )
+        dir2=$( [[ ! -d $targetDirs/dir2/bar  ]] && echo 'pass' || echo 'fail' )
+        dir3=$( [[ ! -d $targetDirs/dir3/baz  ]] && echo 'pass' || echo 'fail' )
+
+        result="$dir1$dir2$dir3"
+        [ $result == "passpasspass" ] && showIndented "pass" 3 || showIndented "fail" 3
+
+
+
+
+      showIndented "should fail when no symlink file" 2
+
+        refreshTestDataFolder
+
+        output=$( $MoveDirsWithoutSymlinks $sourceDirs/dir4 $targetDirs/dir4 )
+        exitCode=$?
+        errorMessage='Error: source directory has no symlink file.'
+
+        [[ $output == "$errorMessage" && $exitCode == "1" ]] &&  showIndented "pass" 3 || showIndented "fail" 3
+
+
+
+
+      showIndented "should not work on directories under depth 1" 2
+
+        # Look at line 51 in the MoveDirsWithoutSymlinks file
+        showIndented "pass" 3
+
+
+
+
+      showIndented "should work with directory names contaning spaces" 2
+
+        refreshTestDataFolder
+
+        $MoveDirsWithoutSymlinks $sourceDirs/dir5 $targetDirs/dir5 > /dev/null
+
+        dir5=$( [[ -d $targetDirs/dir5/fat\ man && -d $targetDirs/dir5/little\ boy ]] && echo 'pass' || echo 'fail' )
+
+        result="$dir5"
+        [ $result == "pass" ] && showIndented "pass" 3 || showIndented "fail" 3
+
+
+
+  # cleanup after test 
+  rm -rf $testData
+
+
+}
+
+
+numberOfParameters="$#"
+[[ "numberOfParameters" -ne 0 ]] && usage || executeTests
+

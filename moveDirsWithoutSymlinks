@@ -1,0 +1,153 @@
+#!/bin/bash
+
+usage () {
+
+  echo "
+  moveDirsWithoutSymlinks.sh <sourceDir> <targetDir> [test]
+
+
+
+  Purpose:
+
+      Move directories from sourceDir to TargetDir as long as it
+      does not have an entry in the '<sourceDir>/DirsWithSymlinks' file.
+
+
+  Example:
+
+      # run in test mode
+      moveDirsWithoutSymlinks.sh /tmp/dir1 /tmp/dir2 test
+
+
+      # run the program
+      moveDirsWithoutSymlinks.sh /tmp/dir1 /tmp/dir2
+
+  "
+  exit
+
+}
+
+function validateNumberOfArguments() {
+  numberOfArguments="$1"
+  [[ $numberOfArguments != "2" && $numberOfArguments != "3" ]] &&
+  echo "ERROR: wrong number of arguments" &&
+  usage
+}
+
+function isTestMode() {
+  [ "$test_mode" == "test" ]
+}
+
+function isNotTestMode() {
+  ! isTestMode
+}
+
+function isSourceDirContainingSymlinkFile() {
+  [ -f $symFile ]
+}
+
+function getDirsAtDepth1() {
+  sourceDir=$1
+  cmd='find . -maxdepth 1 -type d'
+  listOfDirs=$( cd $sourceDir ; $cmd )
+  echo "$listOfDirs"
+}
+
+function isNotSingleDotDir () {
+  [ "$dir" != "." ]
+}
+
+function isNotInSymlinkFile () {
+  cmd="grep $(basename $dir) $symFile"
+  # echo "RESULT: $($cmd) "
+  [ ! "$( grep $(basename $dir) $symFile )" != "" ]
+}
+
+function showMissingSymFileError () {
+  echo 'Error: source directory has no symlink file.'
+  exit 1
+}
+
+function showDirWithinSymlinkFileMessage () {
+  echo "WARNING: ${dir:2} _not_ moved because in symlink file"
+}
+
+
+function moveDir () {
+
+  echo "moving ${dir:2} from source to target"
+
+  mySource="$sourceDir/${dir:2}"
+  myTarget="$targetDir/${dir:2}"
+
+  # show the command
+  isTestMode && echo " mv $mySource $myTarget "
+
+  # run the command
+  isNotTestMode && mv "$mySource" "$myTarget"
+
+}
+
+function processContentsOfSourceDir () {
+
+  # processing contents of source directory
+
+  while read dir
+  do
+
+    # handle error messages
+    if isNotSingleDotDir; then
+      isNotInSymlinkFile || showDirWithinSymlinkFileMessage
+    fi
+
+    # handle processing
+    isNotSingleDotDir &&
+    isNotInSymlinkFile &&
+    moveDir
+
+  done <<< "$( getDirsAtDepth1 $sourceDir )"
+
+
+}
+
+function processSourceDir () {
+
+  isTestMode && echo "*** TEST MODE ***"
+
+  # 'processing source directory'
+
+  symFile="$sourceDir/dirs-with-symlinks"
+  if isSourceDirContainingSymlinkFile ; then
+    processContentsOfSourceDir
+  else
+    showMissingSymFileError
+  fi
+
+}
+
+
+
+
+#
+# MAIN LOGIC
+#
+
+
+validateNumberOfArguments "$#"
+
+sourceDir="$1"
+targetDir="$2"
+testMode="$3"
+symlinkFile="$sourceDir/"
+
+
+# echo -e "PARAMS:\n$sourceDir\n$targetDir\n$testMode"
+
+
+processSourceDir
+
+
+
+
+
+
