@@ -10,7 +10,7 @@ usage () {
   Purpose:
 
       Move directories from sourceDir to TargetDir as long as it
-      does not have an entry in the '<sourceDir>/DirsWithSymlinks' file.
+      does not have an entry in the '<sourceDir>/dirs-with-symlinks' file.
 
 
   Example:
