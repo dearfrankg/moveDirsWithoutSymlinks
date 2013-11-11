@@ -119,6 +119,30 @@ function executeTests () {
 
 
 
+
+
+      showIndented "should match names exactly when checking against the symlink file" 2
+
+        refreshTestDataFolder
+
+        $MoveDirsWithoutSymlinks $sourceDirs/dir6 $targetDirs/dir6 > /dev/null
+
+        # NOTE: symlink file contains foobar
+        # SHOULD MOVE FOO BECAUSE should move the dirs that are not in the symlink file
+        # SHOULD NOT MOVE FOOBAR BECAUSE should not move the dirs that are in the symlink file 
+
+
+        shouldMoveFoo=$( [[ -d $targetDirs/dir6/foo ]] && echo 'pass' || echo 'fail' )
+        shouldNotMoveFoobar=$( [[ ! -d $targetDirs/dir6/foobar ]] && echo 'pass' || echo 'fail' )
+
+        result="$shouldMoveFoo$shouldNotMoveFoobar"
+        [ $result == "passpass" ] && showIndented "pass" 3 || showIndented "fail" 3
+
+
+
+
+
+
   # cleanup after test 
   rm -rf $testData
 

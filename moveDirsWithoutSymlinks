@@ -58,9 +58,7 @@ function isNotSingleDotDir () {
 }
 
 function isNotInSymlinkFile () {
-  cmd="grep $(basename $dir) $symFile"
-  # echo "RESULT: $($cmd) "
-  [ ! "$( grep $(basename $dir) $symFile )" != "" ]
+  [ "$( grep --basic-regexp "^$(basename $dir)$" $symFile )" == "" ]
 }
 
 function showMissingSymFileError () {
